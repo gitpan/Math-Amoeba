@@ -1,0 +1,21 @@
+Announcing the release of Perl Module Math::Amoeba Version 0.01
+Uploaded to CPAN archives under my home directory.
+
+Math::Amoeba - Multidimensional Function Minimisation
+	       using the Downhill Simpex Method
+
+This is an implimenation of the Downhill Simpex Method in
+Multidimensions (Nelder and Mead) for finding the (local) minimum of a
+function. Using Perl makes it easy for that function to
+be the output of another program such as a simulator.
+
+Module Entry
+
+6) Data Types and Data Type Utilities (see also Database Interfaces)
+
+Name           DSLI  Description                                  Info
+-----------    ----  -------------------------------------------- -----
+Math::
+::Amoeba       Rdpr  Multidimensional Function Minimisation        JARW
+
+  JARW John A.R. Williams <J.A.R.Williams@aston.ac.uk>
