@@ -1,6 +1,19 @@
 # This library file contains Amoeba n-D Minimisation routine for Perl
 # $Id: Amoeba.pm,v 1.2 1995/12/24 12:37:46 willijar Exp $ 
 # $Id: Amoeba.pm,v 1.2 1995/12/24 12:37:46 willijar Exp $
+
+package Math::Amoeba;
+
+use strict;
+our $VERSION = 0.02;
+
+use Carp;
+use constant TINY => 1e-16;
+
+use Exporter;
+our @ISA=qw(Exporter);
+our @EXPORT_OK=qw(ConstructVertices EvaluateVertices Amoeba MinimiseND);
+
 =head1 NAME
 
     Math::Amoeba - Multidimensional Function Minimisation
@@ -64,42 +77,7 @@ produces the output
 
 (6.99978191653352,-2.99981241563247)=1.00000008274829
 
-=head1 HISTORY
-
-$Log: Amoeba.pm,v $
-Revision 1.2  1995/12/24 12:37:46  willijar
-General fixup. Added documentation.
-
-
-=head1 BUGS
-
-If the function value converges to exactly zero then the condition for
-convergence fails and maximum iterations will be exceeded or there
-will be a divide by zero error. There is no obvious way to test for
-convergence in this case however adding 1 onto the function value
-gives expected behaviour. i.e. replace '\&afunc' with 'sub {
-1+afunc(@_); }' when calling the routines.
-
-Let me know.
-
-=head1 AUTHOR
-
-John A.R. Williams <J.A.R.Williams@aston.ac.uk>
-
-=head1 SEE ALSO
-
-"Numerical Recipies: The Art of Scientific Computing"
-W.H. Press, B.P. Flannery, S.A. Teukolsky, W.T. Vetterling.
-Cambridge University Press. ISBN 0 521 30811 9.
-
 =cut
-
-require Exporter;
-package Math::Amoeba;
-@ISA=qw(Exporter);
-@EXPORT_OK=qw(ConstructVertices EvaluateVertices Amoeba MinimiseND);
-use strict;
-use Carp;
 
 sub MinimiseND {
     my ($guesses,$scales,$func,$tol,$itmax)=@_;
@@ -138,7 +116,7 @@ my ($ALPHA,$BETA,$GAMMA)=(1.0,0.5,2.0);
 sub Amoeba {
     my ($p,$y,$func,$ftol,$itmax)=@_;
     my $n=$#{$p}; # no points
-    my $i;
+#    my $i;
     if (!$itmax) { $itmax=200; }
     if (!$ftol) { $ftol=1e-6; }
     my ($i,$j);
@@ -157,7 +135,7 @@ sub Amoeba {
 	  if ($y->[$i]>$y->[$ihi]) { $inhi=$ihi; $ihi=$i; }
 	  elsif ($y->[$i]>$y->[$inhi] && $ihi!=$i) { $inhi=$i; }
       }
-      my $rtol=2*abs($y->[$ihi]-$y->[$ilo])/(abs($y->[$ihi])+abs($y->[$ilo]));
+      my $rtol=2*abs($y->[$ihi]-$y->[$ilo])/(abs($y->[$ihi])+abs($y->[$ilo])+TINY);
       if ($rtol<$ftol) { last loop; } 
       if ($iter++>$itmax) {
 	carp "Amoeba exceeded maximum iterations\n"; last loop;
@@ -204,9 +182,9 @@ sub Amoeba {
 	      for($i=0; $i<=$n; $i++) {
 		  if ($i!=$ilo) {
 		      for($j=0; $j<$n; $j++) {
-			  $p->[$i][$j]=0.5*($p->[$i][$j]+$p->[$ilo][$j]);
-			  $y->[$i]=&$func(@{$p->[$i]});
+			  	$p->[$i][$j]=0.5*($p->[$i][$j]+$p->[$ilo][$j]);
 		      }
+			  $y->[$i]=&$func(@{$p->[$i]});
 		  }
 	      }
 	  }
@@ -220,5 +198,36 @@ sub Amoeba {
   return ($p->[$ilo],$y->[$ilo]);
 }
 
+return 1;
 
-1;
+__END__
+
+=head1 HISTORY
+
+$Log: Amoeba.pm,v $
+Revision 1.2  1995/12/24 12:37:46  willijar
+General fixup. Added documentation.
+
+=head1 BUGS
+
+Let me know.
+
+=head1 AUTHOR
+
+John A.R. Williams <J.A.R.Williams@aston.ac.uk>
+Tom Chau <chi.lun@gmail.com>
+
+=head1 SEE ALSO
+
+"Numerical Recipies: The Art of Scientific Computing"
+W.H. Press, B.P. Flannery, S.A. Teukolsky, W.T. Vetterling.
+Cambridge University Press. ISBN 0 521 30811 9.
+
+=head1 COPYRIGHT
+
+Copyright (c) 1995 John A.R. Williams. All rights reserved.
+This program is free software; you can redistribute it and/or
+modify it under the same terms as Perl itself.
+
+Since 2005, this module was co-developed with Tom.
+

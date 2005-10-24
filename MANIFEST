@@ -1,5 +1,6 @@
-MANIFEST
-README
-Release
+lib/Math/Amoeba.pm
 Makefile.PL
-Amoeba.pm
+MANIFEST			This list of files
+META.yml			Module meta-data (added by MakeMaker)
+README
+t/0_poly.t
