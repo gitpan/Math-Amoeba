@@ -5,7 +5,7 @@
 package Math::Amoeba;
 
 use strict;
-our $VERSION = 0.02;
+our $VERSION = 0.03;
 
 use Carp;
 use constant TINY => 1e-16;
@@ -21,10 +21,10 @@ our @EXPORT_OK=qw(ConstructVertices EvaluateVertices Amoeba MinimiseND);
 =head1 SYNOPSIS
 
     use Math::Amoeba qw(ConstructVertices EvaluateVertices Amoeba MinimiseND);
-    my ($vertice,$y)=MinimiseND(\@guess,\@scales,\&func,$tol,$itmax);
+    my ($vertice,$y)=MinimiseND(\@guess,\@scales,\&func,$tol,$itmax,$verbose);
     my @vertices=ConstructVertices(\@vector,\@offsets);
     my @y=EvaluateVertices(\@vertices,\&func);
-    my ($vertice,$y)=Amoeba(\@vertices,\@y,\&func,$tol,$itmax);
+    my ($vertice,$y)=Amoeba(\@vertices,\@y,\&func,$tol,$itmax,$verbose);
 
 =head1 DESCRIPTION
 
@@ -39,19 +39,20 @@ The simplest use is the B<MinimiseND> function. This takes a reference
 to an array of guess values for the parameters at the function
 minimum, a reference to an array of scales for these parameters
 (sensible ranges around the guess in which to look), a reference to
-the function, a convergence tolerence for the minimum and the maximum
-number of iterations to be taken. It returns an array consisting of a
-reference to the function parameters at the minimum and the value
-there.
+the function, a convergence tolerence for the minimum, the maximum
+number of iterations to be taken and the verbose flag (default ON). 
+It returns an array consisting of a reference to the function parameters 
+at the minimum and the value there.
 
 The B<Amoeba> function is the actual implimentation of the Downhill
 Simpex Method in Multidimensions. It takes a reference to an array of
 references to arrays which are the initial n+1 vertices (where n is
 the number of function parameters), a reference to the function
 valuation at these vertices, a reference to the function, a
-convergence tolerence for the minimum and the maximum number of
-iterations to be taken. It returns an array consisting of a reference
-to the function parameters at the minimum and the value there.
+convergence tolerence for the minimum, the maximum number of
+iterations to be taken and the verbose flag (default ON). 
+It returns an array consisting of a reference to the function parameters 
+at the minimum and the value there.
 
 The B<ConstructVertices> is used by B<MinimiseND> to construct the
 initial vertices for B<Amoeba> as the initial guess plus the parameter
@@ -80,10 +81,10 @@ produces the output
 =cut
 
 sub MinimiseND {
-    my ($guesses,$scales,$func,$tol,$itmax)=@_;
+    my ($guesses,$scales,$func,$tol,$itmax, $verbose)=@_;
     my @p=ConstructVertices($guesses,$scales);
     my @y=EvaluateVertices(\@p,$func);
-    return Amoeba(\@p,\@y,$func,$tol,$itmax);
+    return Amoeba(\@p,\@y,$func,$tol,$itmax, $verbose);
 }
 
 sub ConstructVertices {
@@ -114,7 +115,10 @@ sub EvaluateVertices {
 
 my ($ALPHA,$BETA,$GAMMA)=(1.0,0.5,2.0);
 sub Amoeba {
-    my ($p,$y,$func,$ftol,$itmax)=@_;
+    my ($p,$y,$func,$ftol,$itmax, $verbose)=@_;
+
+	$verbose = (defined($verbose)) ? $verbose : 1;
+	
     my $n=$#{$p}; # no points
 #    my $i;
     if (!$itmax) { $itmax=200; }
@@ -137,8 +141,9 @@ sub Amoeba {
       }
       my $rtol=2*abs($y->[$ihi]-$y->[$ilo])/(abs($y->[$ihi])+abs($y->[$ilo])+TINY);
       if ($rtol<$ftol) { last loop; } 
-      if ($iter++>$itmax) {
-	carp "Amoeba exceeded maximum iterations\n"; last loop;
+      if ($iter++>$itmax && $verbose) {
+		carp "Amoeba exceeded maximum iterations\n"; 
+		last loop;
       }
       my (@pbar,@pr,@prr,$ypr,$yprr);
       for($i=0; $i<=$n; $i++) {
@@ -215,7 +220,8 @@ Let me know.
 =head1 AUTHOR
 
 John A.R. Williams <J.A.R.Williams@aston.ac.uk>
-Tom Chau <chi.lun@gmail.com>
+
+Tom Chau <tom@cpan.org>
 
 =head1 SEE ALSO
 

@@ -25,6 +25,12 @@ make install
 
 Recent changes
 ==============
+0.03
+----
+1) Added verbose flag.
+2) Fixed POD. 
+3) Parsed version number from the library in "Makefile.PL".
+
 0.02
 ----
 1) Fixed a minor bug to avoid division by zero
