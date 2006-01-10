@@ -5,7 +5,7 @@
 package Math::Amoeba;
 
 use strict;
-our $VERSION = 0.03;
+our $VERSION = 0.04;
 
 use Carp;
 use constant TINY => 1e-16;
@@ -141,8 +141,8 @@ sub Amoeba {
       }
       my $rtol=2*abs($y->[$ihi]-$y->[$ilo])/(abs($y->[$ihi])+abs($y->[$ilo])+TINY);
       if ($rtol<$ftol) { last loop; } 
-      if ($iter++>$itmax && $verbose) {
-		carp "Amoeba exceeded maximum iterations\n"; 
+      if ($iter++>$itmax) {
+		carp "Amoeba exceeded maximum iterations\n" if ($verbose); 
 		last loop;
       }
       my (@pbar,@pr,@prr,$ypr,$yprr);
@@ -209,9 +209,7 @@ __END__
 
 =head1 HISTORY
 
-$Log: Amoeba.pm,v $
-Revision 1.2  1995/12/24 12:37:46  willijar
-General fixup. Added documentation.
+See "REAME".
 
 =head1 BUGS
 

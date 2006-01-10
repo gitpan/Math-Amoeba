@@ -25,6 +25,10 @@ make install
 
 Recent changes
 ==============
+0.04
+----
+1) Minor bug fix in the verbose flag.
+
 0.03
 ----
 1) Added verbose flag.
