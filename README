@@ -23,24 +23,6 @@ make
 make test
 make install
 
-Recent changes
-==============
-0.04
-----
-1) Minor bug fix in the verbose flag.
-
-0.03
-----
-1) Added verbose flag.
-2) Fixed POD. 
-3) Parsed version number from the library in "Makefile.PL".
-
-0.02
-----
-1) Fixed a minor bug to avoid division by zero
-2) Avoided unnecessary loop
-3) Re-organized the file organizationk, added test case.
-
 Changes/Enhancement planned
 ===========================
-None at this stage.
+See "ChangeLog".

@@ -5,7 +5,9 @@
 package Math::Amoeba;
 
 use strict;
-our $VERSION = 0.04;
+use warnings;
+
+our $VERSION = 0.05;
 
 use Carp;
 use constant TINY => 1e-16;
@@ -35,6 +37,10 @@ actually be the output of another program such as a simulator.
 
 Arrays and the function are passed by reference to the routines.
 
+=over
+
+=item C<MinimiseND>
+
 The simplest use is the B<MinimiseND> function. This takes a reference
 to an array of guess values for the parameters at the function
 minimum, a reference to an array of scales for these parameters
@@ -43,6 +49,8 @@ the function, a convergence tolerence for the minimum, the maximum
 number of iterations to be taken and the verbose flag (default ON). 
 It returns an array consisting of a reference to the function parameters 
 at the minimum and the value there.
+
+=item C<Amoeba>
 
 The B<Amoeba> function is the actual implimentation of the Downhill
 Simpex Method in Multidimensions. It takes a reference to an array of
@@ -54,12 +62,18 @@ iterations to be taken and the verbose flag (default ON).
 It returns an array consisting of a reference to the function parameters 
 at the minimum and the value there.
 
+=item C<ConstructVertices>
+
 The B<ConstructVertices> is used by B<MinimiseND> to construct the
 initial vertices for B<Amoeba> as the initial guess plus the parameter
 scale parameters as vectors along the parameter axis.
 
+=item C<EvaluateVertices>
+
 The B<EvaluateVertices> takes these set of vertices, calling the
 function for each one and returning the vector of results.
+
+=back
 
 =head1 EXAMPLE
 
@@ -78,129 +92,229 @@ produces the output
 
 (6.99978191653352,-2.99981241563247)=1.00000008274829
 
+=head1 LICENSE
+
+PERL
+
 =cut
 
+my ($ALPHA,$BETA,$GAMMA)=(1.0,0.5,2.0);
+
 sub MinimiseND {
-    my ($guesses,$scales,$func,$tol,$itmax, $verbose)=@_;
-    my @p=ConstructVertices($guesses,$scales);
-    my @y=EvaluateVertices(\@p,$func);
-    return Amoeba(\@p,\@y,$func,$tol,$itmax, $verbose);
+	my ($guesses,$scales,$func,$tol,$itmax, $verbose)=@_;
+	my @p=ConstructVertices($guesses,$scales);
+	my @y=EvaluateVertices(\@p,$func);
+	return Amoeba(\@p,\@y,$func,$tol,$itmax, $verbose);
 }
 
 sub ConstructVertices {
-    # given 2 vector references constructs an amoeba
-    # returning the vertices
-    my ($vector,$ofs)=@_;
-    my $n=$#{$vector};
-    my @vector=@{$vector};
-    my (@p,@y,$i);
-    $p[0]=[]; @{$p[0]}=@{$vector};
-    for($i=0; $i<=$n; $i++) {
-	my $v=[]; @{$v}=@{$vector};
-	$v->[$i]+=$ofs->[$i];
-	$p[$i+1]=$v;
-    }
-    return @p;
+	# given 2 vector references constructs an amoeba
+	# returning the vertices
+	my ($vector,$ofs)=@_;
+	my $n=$#{$vector};
+	my @vector=@{$vector};
+	my (@p,@y,$i);
+
+	$p[0]=[]; @{$p[0]}=@{$vector};
+	for($i=0; $i<=$n; $i++) {
+		my $v=[]; @{$v}=@{$vector};
+		$v->[$i]+=$ofs->[$i];
+		$p[$i+1]=$v;
+	}
+	return @p;
 }
 
 sub EvaluateVertices {
-    # evaluates functions for all vertices of the amoeba
-    my ($p,$func)=@_;
-    my ($i,@y);
-    for($i=0; $i<=$#{$p}; $i++) {
-	$y[$i]=&$func(@{$p->[$i]});
-    }
-    return @y;
+	# evaluates functions for all vertices of the amoeba
+	my ($p,$func)=@_;
+	my ($i,@y);
+	for($i=0; $i<=$#{$p}; $i++) {
+		$y[$i]=&$func(@{$p->[$i]});
+	}
+	return @y;
 }
 
-my ($ALPHA,$BETA,$GAMMA)=(1.0,0.5,2.0);
 sub Amoeba {
-    my ($p,$y,$func,$ftol,$itmax, $verbose)=@_;
 
-	$verbose = (defined($verbose)) ? $verbose : 1;
+    my ($p,$y,$func,$ftol,$itmax, $verbose)=@_;
 	
     my $n=$#{$p}; # no points
-#    my $i;
-    if (!$itmax) { $itmax=200; }
+    
+	# Default parameters
+	$verbose = (defined($verbose)) ? $verbose : 1;
+	if (!$itmax) { $itmax=200; }
     if (!$ftol) { $ftol=1e-6; }
+
+	# Member variables
     my ($i,$j);
     my $iter=0;
-    my ($ilo,$ihi,$inhi);
-  loop: {
-      $ilo=0;
-      if ($y->[0]>$y->[1]) {
-	  $ihi=0; $inhi=1;
-      }
-      else {
-	  $ihi=1; $inhi=0;
-      }
-      for($i=0; $i<=$n; $i++) {
-	  if ($y->[$i]<$y->[$ilo]) { $ilo=$i; }
-	  if ($y->[$i]>$y->[$ihi]) { $inhi=$ihi; $ihi=$i; }
-	  elsif ($y->[$i]>$y->[$inhi] && $ihi!=$i) { $inhi=$i; }
-      }
-      my $rtol=2*abs($y->[$ihi]-$y->[$ilo])/(abs($y->[$ihi])+abs($y->[$ilo])+TINY);
-      if ($rtol<$ftol) { last loop; } 
-      if ($iter++>$itmax) {
-		carp "Amoeba exceeded maximum iterations\n" if ($verbose); 
-		last loop;
-      }
-      my (@pbar,@pr,@prr,$ypr,$yprr);
-      for($i=0; $i<=$n; $i++) {
-	  if ($i!=$ihi) {
-	      for($j=0; $j<$n; $j++) {
-		  $pbar[$j]+=$p->[$i][$j];
-	      }
-	  }
-      }
-      for($j=0; $j<$n; $j++) {
-	  $pbar[$j]/=$n;
-	  $pr[$j]=(1.0+$ALPHA)*$pbar[$j]-$ALPHA*$p->[$ihi][$j];
-      }
-      $ypr=&$func(@pr); # Evaluate function
-      if ($ypr < $y->[$ilo]) {
-	  # if it gives a better value than best point, try an
-	  # additional extrapolation by a factor gamma, accept best
-	  for($j=0; $j<$n; $j++) {
-	      $prr[$j]=$GAMMA*$pr[$j]+(1.0-$GAMMA)*$pbar[$j];
-	  }
-	  $yprr=&$func(@prr);
-	  if ($yprr < $y->[$ilo]) { @{$p->[$ihi]}=@prr; $y->[$ihi]=$yprr; }
-	  else { @{$p->[$ihi]}=@pr; $y->[$ihi]=$ypr; }
-      }
-      elsif ($ypr >= $y->[$inhi]) {
-	  # if reflected point worse than 2nd highest
-	  if ($ypr < $y->[$ihi] ) { # if it is better than highest
-	      @{$p->[$ihi]}=@pr; $y->[$ihi]=$ypr; # replace it
-	  }
-	  # look for an intermediate lower point by performing a
-	  # contraction of the simplex along one dimension
-	  for($j=0; $j<$n; $j++) {
-	      $prr[$j]=$BETA*$p->[$ihi]->[$j]+(1.0-$BETA)*$pbar[$j];
-	  }
-	  $yprr=&$func(@prr);
-	  if ($yprr<$y->[$ihi]) { # if contraction gives an improvement
-	      @{$p->[$ihi]}=@prr; $y->[$ihi]=$yprr; # accept it
-	  }
-	  else {  # otherwise cant seem to remove high point
-	      # so contract around lo (best) point
-	      for($i=0; $i<=$n; $i++) {
-		  if ($i!=$ilo) {
-		      for($j=0; $j<$n; $j++) {
-			  	$p->[$i][$j]=0.5*($p->[$i][$j]+$p->[$ilo][$j]);
-		      }
-			  $y->[$i]=&$func(@{$p->[$i]});
-		  }
-	      }
-	  }
-      }
-      else {
-	  # if reflected point is a middling point
-	  @{$p->[$ihi]}=@pr; $y->[$ihi]=$ypr;
-      }
-      goto loop;
-  }
-  return ($p->[$ilo],$y->[$ilo]);
+    my ($ilo, $inhi, $ihi);
+
+	my ($pbar, $pr, $pe, $pc, $ypr, $ype, $ypc);
+
+	# To control the recalculation of centroid
+	my $recalc = 1;
+	my $ihi_o;
+
+	# Loop until any of stopping conditions hit 
+	while (1)
+	{
+    	($ilo, $inhi, $ihi) = _FindMarkers($y);
+
+		# Stopping conditions	
+		my $rtol = 2*abs($y->[$ihi]-$y->[$ilo])/(abs($y->[$ihi])+abs($y->[$ilo])+TINY);
+		if ($rtol<$ftol) { last; } 
+		if ($iter++>$itmax) {
+		  	carp "Amoeba exceeded maximum iterations\n" if ($verbose); 
+		  	last;
+		}
+
+		# Determine the Centroid
+		if ($recalc) {
+			$pbar = _CalcCentroid($p, $ihi);
+		} else {
+			_AdjustCentroid($pbar, $p, $ihi_o, $ihi);
+		}
+
+		# Reset the re-calculation flag, and remember the current highest
+		$recalc = 0;
+
+		# Determine the reflection point, evaluate its value
+		$pr = _CalcReflection($pbar, $p->[$ihi], $ALPHA);
+		$ypr = &$func(@$pr);
+
+		 # if it gives a better value than best point, try an
+		 # additional extrapolation by a factor gamma, accept best
+		if ($ypr < $y->[$ilo]) {
+
+			$pe = _CalcReflection($pbar, $pr, -$GAMMA);
+		    $ype=&$func(@$pe);
+		    if ($ype < $y->[$ilo]) { 
+				$p->[$ihi] = $pe; $y->[$ihi] = $ype; 
+			}
+		    else { 
+				$p->[$ihi] = $pr; $y->[$ihi] = $ypr; 
+			}
+		}
+		# if reflected point worse than 2nd highest
+		elsif ($ypr >= $y->[$inhi]) {
+
+			# if it is better than highest, replace it
+		    if ($ypr < $y->[$ihi] ) {
+ 		        $p->[$ihi] = $pr; $y->[$ihi] = $ypr; 
+		    }
+
+		    # look for an intermediate lower point by performing a
+		    # contraction of the simplex along one dimension
+		    $pc = _CalcReflection($pbar, $p->[$ihi], -$BETA);
+		    $ypc = &$func(@$pc);
+		    
+			# if contraction gives an improvement, accept it
+			if ($ypc < $y->[$ihi]) { 		        
+				$p->[$ihi] = $pc; $y->[$ihi] = $ypc;
+		    }
+			# otherwise cant seem to remove high point
+			# so contract around lo (best) point
+		    else {
+				for($i=0; $i<=$n; $i++) {
+					if ($i!=$ilo) {
+						$p->[$i] = _CalcReflection($p->[$ilo], $p->[$i], -$BETA);
+						$y->[$i] = &$func(@{$p->[$i]});
+					}
+		        }
+				$recalc = 1;
+		    }
+		}
+		# if reflected point is in-between lowest and 2nd highest 
+		else {
+		    $p->[$ihi] = $pr; $y->[$ihi] = $ypr;
+		}
+		
+		# Remember the replacing position and its value
+		$ihi_o = $ihi;
+	}
+
+	return ($p->[$ilo],$y->[$ilo]);
+}
+
+
+# Helper function - find the lowest, 2nd highest and highest position
+sub _FindMarkers
+{
+	my $y = shift;
+    
+	my ($ilo, $inhi, $ihi);
+	my ($i, $n);
+
+	$n = @$y - 1;
+	
+	$ilo=0;
+	if ($y->[0]>$y->[1]) {
+	    $ihi=0; $inhi=1;
+	}
+	else {
+	    $ihi=1; $inhi=0;
+	}
+
+	for($i = 0; $i <= $n; $i++) {
+	    if ($y->[$i] < $y->[$ilo]) { $ilo = $i; }
+	    if ($y->[$i] > $y->[$ihi]) { $inhi = $ihi; $ihi = $i; }
+	    elsif ($y->[$i] > $y->[$inhi] && $ihi != $i) { $inhi = $i; }
+	}
+
+	return ($ilo, $inhi, $ihi);
+}
+
+# Determine the centroid (except the highest point)		
+sub _CalcCentroid
+{
+	my ($p, $ihi) = @_;
+	my ($i, $j, $n);
+	
+	$n = @$p - 1; 
+
+	my $pbar = [];
+	for($j=0; $j<$n; $j++) {
+		for($i=0; $i<=$n; $i++) {
+		    if ($i!=$ihi) {
+				$pbar->[$j] += $p->[$i][$j];
+	        }
+	    }
+		$pbar->[$j] /= $n;
+	}
+
+	return $pbar;
+}
+
+# Adjust the centroid only
+sub _AdjustCentroid
+{
+	my ($pbar, $p, $ihi_o, $ihi) = @_;
+	my ($j, $n);
+
+	$n = @$pbar;
+	
+	if ($ihi_o != $ihi) {
+		for($j=0; $j<$n; $j++) {
+			$pbar->[$j] += ($p->[$ihi_o][$j] - $p->[$ihi][$j]) / $n;
+		}
+	}
+}	
+
+# Determine the reflection point
+sub _CalcReflection
+{
+	my ($p1, $p2, $scale) = @_;
+	my $j;
+
+	my $n = @$p1;
+
+	my $pr = [];
+	for($j=0; $j<$n; $j++) {
+	    $pr->[$j] = $p1->[$j] + $scale*($p1->[$j]-$p2->[$j]);
+	}
+
+	return $pr;
 }
 
 return 1;
